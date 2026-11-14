@@ -1,4 +1,5 @@
 # cad-lab-studio
+<img width="1816" height="624" alt="扫码_搜索联合传播样式-白色版" src="https://github.com/user-attachments/assets/b2c15459-1212-4b3c-ae7f-94c672b320ce" />
 
 独立可部署的图纸建模工作台：解析 DXF / DWG → 提取墙带与楼板 → 逐层堆叠 → 叠加屋顶 / 底座 / 大门 / 墙面立面四类程序化构件。
 
@@ -176,6 +177,9 @@ cad-lab 内部的门 / 窗 / 门连窗 / 玻璃幕墙建模是完整的：`role:
   修改构件配置结构必须两端同步，否则建筑包在编辑器侧会解析出错。
 - 测试覆盖偏几何（面序、法线、group 切分、墙厚证据回填），**没有端到端的「导出 → 导入 → 渲染」集成测试**，
   跨端效果仍以人工导入实测为准。
+
+  <img width="1816" height="624" alt="扫码_搜索联合传播样式-白色版" src="https://github.com/user-attachments/assets/c24ebe53-7996-4e54-9940-d3a6a692f159" />
+
 
 ## 许可证
 
