@@ -1,0 +1,31 @@
+{
+  "name": "cad-lab-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "GPL-3.0",
+  "description": "图纸建模工作台：DXF/DWG 解析 → 逐层墙带与楼板 → 程序化屋顶 / 底座 / 大门 / 墙面立面",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit",
+    "build": "vue-tsc -p tsconfig.json --noEmit && vite build",
+    "build:only": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@mlightcad/libredwg-web": "^0.8.6",
+    "dxf-parser": "^1.1.2",
+    "three": "^0.177.0",
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "@types/three": "^0.177.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^4.1.8",
+    "vue-tsc": "^2.1.6"
+  }
+}

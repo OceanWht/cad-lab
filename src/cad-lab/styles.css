@@ -1,0 +1,754 @@
+/* CAD 图纸解析试验台样式：独立模块，不复用主应用全局样式，避免相互影响 */
+
+:root {
+  --cl-bg: #eef1f6;
+  --cl-surface: #ffffff;
+  --cl-border: #e2e6ef;
+  --cl-text: #1b2333;
+  --cl-muted: #6a7386;
+  --cl-primary: #4a63f0;
+  --cl-primary-hover: #3d54d8;
+  --cl-danger: #d64545;
+  --cl-canvas: #0e131f;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--cl-bg);
+  color: var(--cl-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#cad-lab {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 布局 */
+
+.cl-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--cl-surface);
+  border-bottom: 1px solid var(--cl-border);
+}
+
+.cl-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cl-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4a63f0, #7a8bff);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.cl-brand-text h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cl-brand-text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--cl-muted);
+}
+
+.cl-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cl-file-chip {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f2f4fa;
+  color: #4a5570;
+  font-size: 12px;
+}
+
+.cl-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.cl-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 340px;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--cl-surface);
+  border-right: 1px solid var(--cl-border);
+}
+
+/* 右侧面板：与左侧栏同宽，分隔线改到左边，紧贴平面视图 */
+.cl-sidebar-right {
+  border-right: none;
+  border-left: 1px solid var(--cl-border);
+}
+
+.cl-stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 16px 16px;
+  gap: 10px;
+}
+
+.cl-stage-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cl-stage-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 楼层模型墙段编辑工具栏 */
+
+.cl-floor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--cl-border);
+  border-radius: 10px;
+  background: #f7f9fd;
+}
+
+.cl-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cl-button-ghost.is-active {
+  border-color: var(--cl-primary);
+  background: rgba(74, 99, 240, 0.1);
+  color: var(--cl-primary);
+}
+
+.cl-button-danger {
+  background: var(--cl-danger);
+  border-color: var(--cl-danger);
+  color: #fff;
+}
+
+.cl-button-danger:hover:not(:disabled) {
+  background: #bd3838;
+}
+
+/* 框选蒙层：绝对定位在视口内的半透明矩形 */
+
+.cl-select-box {
+  position: absolute;
+  border: 1px solid rgba(122, 167, 255, 0.9);
+  background: rgba(122, 167, 255, 0.16);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cl-viewport-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--cl-canvas);
+  box-shadow: 0 12px 32px rgba(23, 34, 64, 0.18);
+}
+
+.cl-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.cl-viewport canvas {
+  display: block;
+}
+
+.cl-viewport-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(10, 15, 26, 0.6);
+  color: rgba(230, 233, 242, 0.6);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* 多层楼层展开 */
+
+.cl-floor-list {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100% - 28px);
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(10, 15, 26, 0.72);
+  border: 1px solid rgba(122, 167, 255, 0.28);
+  backdrop-filter: blur(6px);
+}
+
+.cl-floor-list-title {
+  color: rgba(226, 233, 248, 0.6);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.cl-floor-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.cl-floor-item {
+  min-width: 54px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(226, 233, 248, 0.82);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cl-floor-item:hover {
+  background: rgba(122, 167, 255, 0.2);
+}
+
+.cl-floor-item.is-active {
+  background: rgba(255, 162, 58, 0.9);
+  border-color: rgba(255, 196, 128, 0.9);
+  color: #1c1408;
+  font-weight: 600;
+}
+
+/* 区块 */
+
+.cl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cl-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cl-section-title h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.cl-inline-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cl-empty-panel h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.cl-empty-panel p {
+  margin: 0 0 12px;
+  color: var(--cl-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cl-hints {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--cl-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+/* 概览数据 */
+
+.cl-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.cl-stats div {
+  padding: 8px;
+  border-radius: 10px;
+  background: #f6f8fc;
+}
+
+.cl-stats dt {
+  font-size: 11px;
+  color: var(--cl-muted);
+}
+
+.cl-stats dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cl-notes {
+  margin: 0;
+  padding: 8px 10px 8px 24px;
+  border-radius: 10px;
+  background: #fff8e8;
+  color: #8a6a1f;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* 图层列表 */
+
+.cl-layer-section {
+  min-height: 0;
+}
+
+.cl-search {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--cl-border);
+  border-radius: 8px;
+  background: #fafbfe;
+  color: var(--cl-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.cl-search:focus {
+  border-color: var(--cl-primary);
+}
+
+.cl-layer-head,
+.cl-layer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px 30px 30px 56px 62px;
+  align-items: center;
+  gap: 4px;
+}
+
+.cl-layer-head {
+  padding: 0 4px;
+  color: var(--cl-muted);
+  font-size: 11px;
+}
+
+.cl-layer-head span:not(:first-child) {
+  text-align: center;
+}
+
+.cl-layer-list {
+  max-height: 38vh;
+  overflow-y: auto;
+  border: 1px solid var(--cl-border);
+  border-radius: 10px;
+}
+
+.cl-layer-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f2f8;
+  font-size: 12px;
+}
+
+.cl-layer-row:last-child {
+  border-bottom: none;
+}
+
+.cl-layer-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cl-layer-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-color-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+}
+
+.cl-layer-count {
+  text-align: center;
+  color: var(--cl-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-layer-row input[type='checkbox'] {
+  justify-self: center;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--cl-primary);
+  cursor: pointer;
+}
+
+/* 图层行内的墙厚输入：仅在勾选为墙体图层时出现 */
+.cl-thickness-input {
+  width: 100%;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid var(--cl-border);
+  border-radius: 6px;
+  background: #fafbfe;
+  color: var(--cl-text);
+  font-size: 11px;
+  outline: none;
+}
+
+.cl-thickness-input:focus {
+  border-color: var(--cl-primary);
+}
+
+.cl-layer-placeholder {
+  text-align: center;
+  font-size: 11px;
+}
+
+/* 门窗类型下拉：与墙厚输入同高，避免图层行高度跳动 */
+.cl-opening-select {
+  width: 100%;
+  height: 24px;
+  padding: 0 2px;
+  border: 1px solid var(--cl-border);
+  border-radius: 6px;
+  background: #fafbfe;
+  color: var(--cl-text);
+  font-size: 11px;
+  outline: none;
+}
+
+.cl-opening-select:focus {
+  border-color: var(--cl-primary);
+}
+
+/* 表单与按钮 */
+
+.cl-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--cl-muted);
+}
+
+.cl-field input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--cl-border);
+  border-radius: 8px;
+  background: #fafbfe;
+  color: var(--cl-text);
+  font-size: 13px;
+}
+
+/* 楼层数在首次生成前锁定，置灰表示暂不可编辑 */
+.cl-field input:disabled {
+  background: var(--cl-bg);
+  border-color: var(--cl-border);
+  color: var(--cl-muted);
+  cursor: not-allowed;
+}
+
+/* 取色器内边距收窄，让色块铺满输入框 */
+.cl-field input[type='color'] {
+  padding: 2px;
+  cursor: pointer;
+}
+
+/* 下拉选择与输入框保持同一视觉规格 */
+.cl-field select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--cl-border);
+  border-radius: 8px;
+  background: #fafbfe;
+  color: var(--cl-text);
+  font-size: 13px;
+}
+
+.cl-field select:disabled {
+  background: var(--cl-bg);
+  border-color: var(--cl-border);
+  color: var(--cl-muted);
+  cursor: not-allowed;
+}
+
+/* 构件开关：复选 + 文案一行排布 */
+.cl-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 6px;
+  font-size: 12px;
+  color: var(--cl-text);
+  cursor: pointer;
+}
+
+/* 构件提示逐条成行，避免长原因挤在一行里 */
+.cl-notice {
+  display: block;
+  line-height: 1.6;
+}
+
+.cl-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cl-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cl-button-primary {
+  background: var(--cl-primary);
+  color: #fff;
+}
+
+.cl-button-primary:hover:not(:disabled) {
+  background: var(--cl-primary-hover);
+}
+
+.cl-button-ghost {
+  background: transparent;
+  border-color: var(--cl-border);
+  color: #445069;
+}
+
+.cl-button-ghost:hover {
+  border-color: #c7cedd;
+  background: #f7f9fd;
+}
+
+.cl-full {
+  width: 100%;
+}
+
+.cl-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cl-primary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cl-link:hover {
+  text-decoration: underline;
+}
+
+/* 材质预设：一排文字按钮，点击直接套用 */
+.cl-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 2px 0;
+}
+
+.cl-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: #e7ebf4;
+}
+
+.cl-tab {
+  height: 30px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #5a6478;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cl-tab.is-active {
+  background: var(--cl-surface);
+  color: var(--cl-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(23, 34, 64, 0.1);
+}
+
+.cl-muted {
+  color: var(--cl-muted);
+}
+
+.cl-small {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.cl-error {
+  color: var(--cl-danger);
+  font-size: 12px;
+}
+
+.cl-hidden-input {
+  display: none;
+}
+
+/* 拖拽 / 解析遮罩 */
+
+.cl-drop-zone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 15, 26, 0.72);
+}
+
+.cl-drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, 100%);
+  padding: 32px 28px;
+  border: 1px dashed rgba(160, 176, 214, 0.5);
+  border-radius: 16px;
+  background: rgba(20, 27, 43, 0.9);
+  color: #e6e9f2;
+  text-align: center;
+}
+
+.cl-drop-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cl-drop-card p {
+  margin: 0;
+  color: rgba(214, 221, 236, 0.72);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cl-drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(74, 99, 240, 0.18);
+  color: #9db0ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.cl-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(157, 176, 255, 0.25);
+  border-top-color: #9db0ff;
+  border-radius: 50%;
+  animation: cl-spin 0.9s linear infinite;
+}
+
+@keyframes cl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1080px) {
+  .cl-sidebar {
+    width: 292px;
+  }
+}
